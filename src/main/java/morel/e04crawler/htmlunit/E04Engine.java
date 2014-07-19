@@ -90,6 +90,10 @@ public class E04Engine {
 //		return (HtmlElement) loginForm.querySelector("#loginBut");
 	}
 	
+	public List<JobRecord> fetchJobByDefaultResume() throws IOException, MalformedURLException {
+		return fetchJobByItemKey("x2", Integer.MAX_VALUE);
+	}
+	
 	public List<JobRecord> fetchJobByItemKey(String itemKey) throws IOException, MalformedURLException {
 		return fetchJobByItemKey(itemKey, Integer.MAX_VALUE);
 	}
