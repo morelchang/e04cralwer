@@ -16,6 +16,7 @@ public class JobRecord {
 	private String jobUrl;
 	private String summary;
 	private Date lastUpdate;
+	// TODO need address property
 
 	public String getCompanyName() {
 		return companyName;

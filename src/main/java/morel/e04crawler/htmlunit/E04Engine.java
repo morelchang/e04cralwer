@@ -11,7 +11,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import morel.e04crawler.JobRecord;
+import morel.e04crawler.Resume;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,10 +21,11 @@ import org.apache.commons.logging.LogFactory;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.ScriptResult;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNode;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
+import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class E04Engine {
@@ -34,11 +37,16 @@ public class E04Engine {
 
 	private WebClient client = new WebClient(BrowserVersion.CHROME);
 	private HtmlPage loginPage;
+	private HtmlPage pdaPage;
 
 	public String init() throws IOException, MalformedURLException {
+//		String loginUrl = "http://m.104.com.tw/login";
 		String loginUrl = "http://login.104.com.tw/login.cfm";
 		logger.info("fetching login page:" + loginUrl + "...");
+//		client.getOptions().setThrowExceptionOnScriptError(false);
 		loginPage = client.getPage(loginUrl);
+//		logger.info(loginPage.asXml());
+//		client.getOptions().setThrowExceptionOnScriptError(true);
 		
 		// retrieve captcha image for resolving
 		String captchaUrl = findCaptchaUrl(loginPage);
@@ -47,7 +55,7 @@ public class E04Engine {
 
 	public void login(String loginAccount, String loginPassword,
 			String captcha) throws MalformedURLException, IOException {
-		HtmlForm loginForm = loginPage.getFormByName("form1");
+		HtmlForm loginForm = fetchLoginForm();
 		
 		// set login information and login
 		logger.info("try to login with account:" + loginAccount + ", captcha:" + captcha + "...");
@@ -59,15 +67,27 @@ public class E04Engine {
 		loginForm.getInputByName("password").setValueAttribute(loginPassword);
 		
 		// click to login
-		HtmlInput loginButton = loginForm.getInputByValue("·|­ûµn¤J");
+//		client.getOptions().setThrowExceptionOnScriptError(false);
+		HtmlElement loginButton = fetchLoginButton(loginForm);
 		if (loginButton == null) {
 			logger.error("====> loign button not found!");
 			throw new IllegalStateException("login button not found in login page");
 		}
-		HtmlPage pdaPage = loginButton.click();
-		logger.info(pdaPage.asXml());
+		pdaPage = loginButton.click();
+//		client.getOptions().setThrowExceptionOnScriptError(true);
+//		logger.info(pdaPage.asXml());
 		
 		// TODO: determine login failed situation by response page of click
+	}
+
+	private HtmlForm fetchLoginForm() {
+		return loginPage.getFormByName("form1");
+//		return loginPage.getFormByName("login");
+	}
+
+	private HtmlElement fetchLoginButton(HtmlForm loginForm) {
+		return loginForm.getInputByValue("æœƒå“¡ç™»å…¥");
+//		return (HtmlElement) loginForm.querySelector("#loginBut");
 	}
 	
 	public List<JobRecord> fetchJobByItemKey(String itemKey) throws IOException, MalformedURLException {
@@ -87,6 +107,15 @@ public class E04Engine {
 		int totalPageCount = jobCount / 20 + ((jobCount % 20 == 0) ? (0) : (1)) - 1;
 		int fetchPageCount = Math.min(totalPageCount, limitPageCount);
 		
+		loadJobDetail(javaJobsPage, fetchPageCount);
+		
+		List<JobRecord> records = obsorbJobRecord(javaJobsPage, jobCount);
+		
+		cleanUp(records);
+		return records;
+	}
+
+	private void loadJobDetail(HtmlPage javaJobsPage, int fetchPageCount) {
 		// loop to call get_joblist_detail() javascript to load more jobs by detail page count
 		client.waitForBackgroundJavaScript(2000);
 		int totalWaitTime = 0;
@@ -122,7 +151,9 @@ public class E04Engine {
 				continue;
 			}
 		}
-		
+	}
+
+	private List<JobRecord> obsorbJobRecord(HtmlPage javaJobsPage, int jobCount) {
 		// save job result with (company_id, job_id, company_name, job_name, job_summary)
 		List<JobRecord> records = initRecords(jobCount);
 		absorb(records, javaJobsPage.querySelectorAll("div.joblist_cont .compname_1 a"), new AbsorbAction() {
@@ -181,8 +212,6 @@ public class E04Engine {
 				}
 			}
 		});
-		
-		cleanUp(records);
 		return records;
 	}
 
@@ -244,6 +273,74 @@ public class E04Engine {
 		}
 		logger.info("captcah image url:" + captchaUrl);
 		return captchaUrl;
+	}
+
+	public Resume getDefaultResume() throws IOException {
+		logger.info("reading default resume...");
+		DomNodeList<DomNode> resumeLinks = pdaPage.querySelectorAll(".basic_info ul a");
+		// default resume is at last position
+		HtmlElement defaultResumeLink = (HtmlElement) resumeLinks.get(resumeLinks.size() - 1);
+		// get default resume id (something like nv value, eg:nv=y2147464u28444a4643444o214q2)
+		String nvStr = defaultResumeLink.getAttribute("href").replaceAll("[^?]*\\?(nv=[^&]*)&.*", "$1");
+		
+		final String resumeUrlBase = "http://pda.104.com.tw/my104/resume/";
+		// profile
+		HtmlPage profilePage = client.getPage(resumeUrlBase + "profile/index?" + nvStr);
+		String name = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][1]");
+		String gender = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][3]");
+		String birthday = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][6]");
+		String email = xpath(profilePage, "//div[@id='box_view_02']/div[@class='info_width'][1]");
+		String homeNumber = xpath(profilePage, "//div[@id='box_view_02']/div[@class='info_width'][3]");
+		String contactNumber = xpath(profilePage, "//div[@id='box_view_02']/div[@class='info_width'][2]");
+		String address = xpath(profilePage, "//div[@id='box_view_02']/div[@class='info_width'][5]");
+		logger.info(String.format("read profile: name:%s, address:%s, gender:%s", name, address, gender));
+		
+		// background
+		HtmlPage backgroundPage = client.getPage(resumeUrlBase + "background/index?" + nvStr);
+		((HtmlElement) backgroundPage.querySelector("#ExperienceFmo_wageYear1")).click();
+		client.waitForBackgroundJavaScript(5000);
+		String salaryYear = xpath(backgroundPage, "//input[@id='ExperienceFmo_wageYear1']");
+		logger.info(String.format("read background: salaryYear:%s", salaryYear));
+		
+		// jobcondition
+		HtmlPage jobconditionPage = client.getPage(resumeUrlBase + "jobcondition/index?" + nvStr);
+		String desiredPos = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][1]");
+		String desiredArea = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][7]");
+		String desiredFields = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][6]");
+		logger.info(String.format("read jobcondition: desiredPos:%s, desiredFields:%s", desiredPos, desiredFields));
+		
+		// specialty
+		//HtmlPage specialtyPage = client.getPage(resumeUrlBase + "/specialty/index?" + nvStr);
+		//String skills = xpath(specialtyPage, "//div[@id='localID']/div[@class='form_info'][1]/p");
+		
+		return new E04ResumeFactory().create(name, gender, birthday, email, homeNumber,
+				contactNumber, address, salaryYear, desiredPos, desiredArea,
+				desiredFields);
+	}
+	
+	
+	private String xpath(HtmlPage page, String xpath) {
+		return xpath(page, xpath, null);
+	}
+
+	private String xpath(HtmlPage page, String xpath, String attrName) {
+		List<?> byXPath = page.getByXPath(xpath);
+		if (byXPath.isEmpty()) {
+			return null;
+		}
+		
+		String result = null;
+		if (((DomElement) byXPath.get(0)).getTextContent() != null) {
+			if (attrName != null) {
+				result = StringUtils.trim(((DomElement) byXPath.get(0)).getAttribute(attrName));
+			} else {
+				result = StringUtils.trim(((DomElement) byXPath.get(0)).getTextContent());
+			}
+		}
+		
+		// remove this special char
+		String spChar = "Â ";
+		return StringUtils.trim(StringUtils.removeEnd(result, spChar));
 	}
 
 }

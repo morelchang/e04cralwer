@@ -28,11 +28,13 @@ public class E04WebPageJobCrawler {
 		logger.info("fetching 104 job detail by itemKey:" + itemKey);
 		String captchaUrl = engine.init();
 		
-		String captcha = "";
+		String captcha = null;
 		if (captchaUrl != null) {
 			captcha = displayCaptchaInSwing(captchaUrl);
 		}
 		engine.login(loginAccount, loginPassword, captcha);
+		
+		engine.getDefaultResume();
 		
 		List<JobRecord> records = engine.fetchJobByItemKey(itemKey, limitPageCount);
 		
