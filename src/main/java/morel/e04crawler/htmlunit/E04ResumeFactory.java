@@ -1,10 +1,10 @@
 package morel.e04crawler.htmlunit;
 
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import morel.e04crawler.CodeValue;
 import morel.e04crawler.Resume;
 
 import org.apache.commons.lang3.StringUtils;
@@ -13,8 +13,9 @@ public class E04ResumeFactory {
 
 	public Resume create(String name, String gender, String birthday,
 			String email, String homeNumber, String contactNumber,
-			String address, String salaryYear, String desiredPos,
-			String desiredArea, String desiredFields) {
+			String address, String salaryYear, String roleFullTime,
+			String rolePartTime, List<CodeValue> cates, List<CodeValue> fields,
+			List<CodeValue> areas) {
 		Resume resume = new Resume();
 		resume.setName(name);
 		resume.setGender(gender);
@@ -24,9 +25,9 @@ public class E04ResumeFactory {
 		resume.setCellphone(contactNumber);
 		resume.setContactAddress(address);
 		resume.setPreviousYearSalary(formatInt(salaryYear));
-		resume.setExpectJobCategory(formatList(desiredPos));
-		resume.setExpectJobArea(formatList(desiredArea));
-		resume.setExpectIndustrySectors(formatList(desiredFields));
+		resume.setExpectJobCategory(cates);
+		resume.setExpectJobArea(areas);
+		resume.setExpectIndustrySectors(fields);
 		return resume;
 	}
 
@@ -35,15 +36,6 @@ public class E04ResumeFactory {
 			return Integer.parseInt(salaryYear);
 		}
 		return 0;
-	}
-
-	private List<String> formatList(String listValue) {
-		listValue = listValue.replaceAll("\t", "").trim();
-		String[] split = listValue.split("、");
-		for (int i = 0; i < split.length; i++) {
-			split[i] = StringUtils.trim(split[i]);
-		}
-		return Arrays.asList(split);
 	}
 	
 	private static Date formatBirthday(String birthday) {

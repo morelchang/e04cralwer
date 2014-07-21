@@ -14,9 +14,9 @@ public class Resume {
 	private String tel;
 	private String cellphone;
 	private String contactAddress;
-	private List<String> expectJobCategory;
-	private List<String> expectJobArea;
-	private List<String> expectIndustrySectors;
+	private List<CodeValue> expectJobCategory;
+	private List<CodeValue> expectJobArea;
+	private List<CodeValue> expectIndustrySectors;
 	private int previousYearSalary;
 
 	/**
@@ -138,7 +138,7 @@ public class Resume {
 	 * 
 	 * @return the expectJobCategory
 	 */
-	public List<String> getExpectJobCategory() {
+	public List<CodeValue> getExpectJobCategory() {
 		return expectJobCategory;
 	}
 
@@ -148,7 +148,7 @@ public class Resume {
 	 * @param expectJobCategory
 	 *            the expectJobCategory to set
 	 */
-	public void setExpectJobCategory(List<String> expectJobCategory) {
+	public void setExpectJobCategory(List<CodeValue> expectJobCategory) {
 		this.expectJobCategory = expectJobCategory;
 	}
 
@@ -157,7 +157,7 @@ public class Resume {
 	 * 
 	 * @return the expectJobArea
 	 */
-	public List<String> getExpectJobArea() {
+	public List<CodeValue> getExpectJobArea() {
 		return expectJobArea;
 	}
 
@@ -167,7 +167,7 @@ public class Resume {
 	 * @param expectJobArea
 	 *            the expectJobArea to set
 	 */
-	public void setExpectJobArea(List<String> expectJobArea) {
+	public void setExpectJobArea(List<CodeValue> expectJobArea) {
 		this.expectJobArea = expectJobArea;
 	}
 
@@ -176,7 +176,7 @@ public class Resume {
 	 * 
 	 * @return the expectIndustrySectors
 	 */
-	public List<String> getExpectIndustrySectors() {
+	public List<CodeValue> getExpectIndustrySectors() {
 		return expectIndustrySectors;
 	}
 
@@ -186,7 +186,7 @@ public class Resume {
 	 * @param expectIndustrySectors
 	 *            the expectIndustrySectors to set
 	 */
-	public void setExpectIndustrySectors(List<String> expectIndustrySectors) {
+	public void setExpectIndustrySectors(List<CodeValue> expectIndustrySectors) {
 		this.expectIndustrySectors = expectIndustrySectors;
 	}
 

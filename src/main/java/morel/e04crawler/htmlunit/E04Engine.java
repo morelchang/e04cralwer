@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import morel.e04crawler.CodeValue;
 import morel.e04crawler.JobRecord;
 import morel.e04crawler.Resume;
 
@@ -362,30 +363,61 @@ public class E04Engine {
 		
 		// background
 		HtmlPage backgroundPage = getPage(resumeUrlBase + "background/index?" + nvStr, "resume background");
-		try {
-			((HtmlElement) backgroundPage.querySelector("#box_view_experience_1 a.edit_exper_1")).click();
-		} catch (IOException e) {
-			logger.error("failed to click background tab");
-			throw new RuntimeException(e);
-		}
+		click(backgroundPage, "#box_view_experience_1 a.edit_exper_1");
 		client.waitForBackgroundJavaScript(5000);
 		String salaryYear = xpath(backgroundPage, "//input[@id='ExperienceFmo_wageYear1']", "value");
 		logger.info(String.format("read background: salaryYear:%s", salaryYear));
 		
 		// jobcondition
 		HtmlPage jobconditionPage = getPage(resumeUrlBase + "jobcondition/index?" + nvStr, "job condition");
-		String desiredPos = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][1]");
-		String desiredArea = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][7]");
-		String desiredFields = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][6]");
-		logger.info(String.format("read jobcondition: desiredPos:%s, desiredFields:%s", desiredPos, desiredFields));
+		HtmlPage jobconditionEditPage = click(jobconditionPage, "#open_edit_job");
+		String roleFullTime = xpath(jobconditionEditPage, "//input[@id='JobConditionFmo_roleArr_0']", "checked");
+		String rolePartTime = xpath(jobconditionEditPage, "//input[@id='JobConditionFmo_roleArr_1']", "checked");
 		
+		String countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		List<CodeValue> cates = new ArrayList<CodeValue>();
+		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+			String cateName = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
+			String cateCode = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
+			cates.add(new CodeValue(cateCode, cateName));
+		}
+		
+		countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		List<CodeValue> fields = new ArrayList<CodeValue>();
+		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+			String fieldName = xpath(jobconditionEditPage, "//div[@id='indDiv']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
+			String fieldCode = xpath(jobconditionEditPage, "//div[@id='indDiv']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
+			fields.add(new CodeValue(fieldCode, fieldName));
+		}
+		
+		countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		List<CodeValue> areas = new ArrayList<CodeValue>();
+		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+			String areaName = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
+			String areaCode = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
+			areas.add(new CodeValue(areaCode, areaName));
+		}
+
+		logger.info(String.format("read jobcondition: fullTime:%s, partTime:%s, cates:%s, fields:%s, areas:%s", 
+				roleFullTime, rolePartTime, cates, fields, areas));
 		// specialty
 		//HtmlPage specialtyPage = client.getPage(resumeUrlBase + "/specialty/index?" + nvStr);
 		//String skills = xpath(specialtyPage, "//div[@id='localID']/div[@class='form_info'][1]/p");
 		
 		return new E04ResumeFactory().create(name, gender, birthday, email, homeNumber,
-				contactNumber, address, salaryYear, desiredPos, desiredArea,
-				desiredFields);
+				contactNumber, address, salaryYear, roleFullTime, rolePartTime, cates, fields, areas);
+	}
+
+	private HtmlPage click(HtmlPage page, String btnCss) {
+		HtmlPage result;
+		try {
+			result = ((HtmlElement) page.querySelector(btnCss)).click();
+			client.waitForBackgroundJavaScript(5000);
+		} catch (IOException e) {
+			logger.error("failed to click background tab");
+			throw new RuntimeException(e);
+		}
+		return result;
 	}
 
 	/**
