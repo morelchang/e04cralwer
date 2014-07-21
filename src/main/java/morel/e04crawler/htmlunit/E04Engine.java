@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 import morel.e04crawler.JobRecord;
 import morel.e04crawler.Resume;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,6 +27,26 @@ import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+/**
+ * basic usage:<br/>
+ * <pre>
+ * E04Engine engine = new E04Engine();
+ * String capchaUrl = engine.init();
+ * if (capchaUrl != null) {
+ *   // you have to display this captcha image for user to input captcha value
+ *   captcah = readFromInput();
+ * }
+ * engine.login(userAcco);
+ * 
+ * Resume resume = engine.getDefaultResume();
+ * List&lt;JobRecord&gt; jobRecords = engine.fetchJobByDefaultResume();
+ * 
+ * engine.logout();
+ * </pre>
+ * 
+ * @author morel_chang
+ *
+ */
 public class E04Engine {
 
 	private static final Log logger = LogFactory.getLog(E04Engine.class);
@@ -36,15 +55,24 @@ public class E04Engine {
 	private static final int AJAX_TIME_OFFSET = 100;
 
 	private WebClient client = new WebClient(BrowserVersion.CHROME);
-	private HtmlPage loginPage;
+	private LoginOption loginOption = new DesktopLoginOption();
+
+	HtmlPage loginPage;
 	private HtmlPage pdaPage;
 
-	public String init() throws IOException, MalformedURLException {
-//		String loginUrl = "http://m.104.com.tw/login";
-		String loginUrl = "http://login.104.com.tw/login.cfm";
+	/**
+	 * you have to call this method before any operation in order to get a login captcha
+	 * 
+	 * @return URL of the captcah, since display this image to end-user and ask for input captcha for login
+	 * 
+	 * @throws IOException
+	 * @throws MalformedURLException
+	 */
+	public String init() {
+		String loginUrl = loginOption.getLoginUrl();
 		logger.info("fetching login page:" + loginUrl + "...");
 //		client.getOptions().setThrowExceptionOnScriptError(false);
-		loginPage = client.getPage(loginUrl);
+		loginPage = getPage(loginUrl, "login");
 //		logger.info(loginPage.asXml());
 //		client.getOptions().setThrowExceptionOnScriptError(true);
 		
@@ -53,10 +81,20 @@ public class E04Engine {
 		return captchaUrl;
 	}
 
-	public void login(String loginAccount, String loginPassword,
-			String captcha) throws MalformedURLException, IOException {
-		HtmlForm loginForm = fetchLoginForm();
-		
+	/**
+	 * login to e04 site
+	 * <p>
+	 * a captcah is required, which can get according to {@link #init()} method
+	 * </p>
+	 * 
+	 * @param loginAccount
+	 * @param loginPassword
+	 * @param captcha
+	 * @throws IOException
+	 */
+	public LoginStatus login(String loginAccount, String loginPassword, String captcha) {
+		HtmlForm loginForm = loginOption.fetchLoginForm(loginPage);
+
 		// set login information and login
 		logger.info("try to login with account:" + loginAccount + ", captcha:" + captcha + "...");
 		if (captcha != null) {
@@ -68,52 +106,61 @@ public class E04Engine {
 		
 		// click to login
 //		client.getOptions().setThrowExceptionOnScriptError(false);
-		HtmlElement loginButton = fetchLoginButton(loginForm);
+		HtmlElement loginButton = loginOption.fetchLoginButton(loginForm);
 		if (loginButton == null) {
 			logger.error("====> loign button not found!");
 			throw new IllegalStateException("login button not found in login page");
 		}
-		pdaPage = loginButton.click();
+		try {
+			pdaPage = loginButton.click();
+		} catch (IOException e) {
+			logger.error("failed to submit loginPage:" + loginOption.getLoginUrl());
+			throw new RuntimeException(e);
+		}
 //		client.getOptions().setThrowExceptionOnScriptError(true);
 //		logger.info(pdaPage.asXml());
 		
-		// TODO: determine login failed situation by response page of click
+		// determine login failed situation by response page of click
+		if (pdaPage.asXml().contains("驗證碼有誤，請重新輸入")) {
+			return LoginStatus.INCORRECT_CAPTCAH;
+		} else if (pdaPage.getUrl().getPath().contains("Check_IdError_Form") || pdaPage.getUrl().getPath().contains("login.cfm")) {
+			return LoginStatus.INCORRECT_ID_OR_PASSWORD;
+		}
+		return LoginStatus.SUCCESS;
 	}
 
-	private HtmlForm fetchLoginForm() {
-		return loginPage.getFormByName("form1");
-//		return loginPage.getFormByName("login");
-	}
 
-	private HtmlElement fetchLoginButton(HtmlForm loginForm) {
-		return loginForm.getInputByValue("會員登入");
-//		return (HtmlElement) loginForm.querySelector("#loginBut");
-	}
-	
-	public List<JobRecord> fetchJobByDefaultResume() throws IOException, MalformedURLException {
+	/**
+	 * get matching job by user's default resume
+	 * <p>
+	 * e04 will perform the job matching
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public List<JobRecord> fetchJobByDefaultResume() {
 		return fetchJobByItemKey("x2", Integer.MAX_VALUE);
 	}
 	
-	public List<JobRecord> fetchJobByItemKey(String itemKey) throws IOException, MalformedURLException {
+	public List<JobRecord> fetchJobByItemKey(String itemKey) {
 		return fetchJobByItemKey(itemKey, Integer.MAX_VALUE);
 	}
 	
-	public List<JobRecord> fetchJobByItemKey(String itemKey, int limitPageCount)
-			throws IOException, MalformedURLException {
+	public List<JobRecord> fetchJobByItemKey(String itemKey, int limitPageCount) {
 		// fetch java related jobs
 		logger.info("fetching jobDetail by itemKey:" + itemKey);
-		HtmlPage javaJobsPage = client.getPage("http://pda.104.com.tw/my104/mate/list?itemNo=" + itemKey);
+		HtmlPage jobListPage = getPage("http://pda.104.com.tw/my104/mate/list?itemNo=" + itemKey, "job detail");
 	
 		// get total job count(first '.numeral' element)/20 as detail page count
-		String jobCountValue = javaJobsPage.querySelector(".numeral").getTextContent();
+		String jobCountValue = jobListPage.querySelector(".numeral").getTextContent();
 		int jobCount = Integer.valueOf(jobCountValue);
 		logger.info("total job count:" + jobCount);
 		int totalPageCount = jobCount / 20 + ((jobCount % 20 == 0) ? (0) : (1)) - 1;
 		int fetchPageCount = Math.min(totalPageCount, limitPageCount);
 		
-		loadJobDetail(javaJobsPage, fetchPageCount);
+		loadJobDetail(jobListPage, fetchPageCount);
 		
-		List<JobRecord> records = obsorbJobRecord(javaJobsPage, jobCount);
+		List<JobRecord> records = obsorbJobRecord(jobListPage, jobCount);
 		
 		cleanUp(records);
 		return records;
@@ -219,9 +266,14 @@ public class E04Engine {
 		return records;
 	}
 
-	public void logout() throws IOException, MalformedURLException {
-		// logout
-		client.getPage("http://login.104.com.tw/logout.cfm");
+	/**
+	 * logout e04
+	 * <p>
+	 * call this method to release web resources
+	 * </p>
+	 */
+	public void logout() {
+		getPage("http://login.104.com.tw/logout.cfm", "logout");
 		client.closeAllWindows();
 	}
 
@@ -279,7 +331,16 @@ public class E04Engine {
 		return captchaUrl;
 	}
 
-	public Resume getDefaultResume() throws IOException {
+	/**
+	 * get default resume
+	 * <p>
+	 * a user can create multiple resumes, but we assume the 1st one is default
+	 * resume, which is used for {@link #fetchJobByDefaultResume()} by e04
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public Resume getDefaultResume() {
 		logger.info("reading default resume...");
 		DomNodeList<DomNode> resumeLinks = pdaPage.querySelectorAll(".basic_info ul a");
 		// default resume is at last position
@@ -289,7 +350,7 @@ public class E04Engine {
 		
 		final String resumeUrlBase = "http://pda.104.com.tw/my104/resume/";
 		// profile
-		HtmlPage profilePage = client.getPage(resumeUrlBase + "profile/index?" + nvStr);
+		HtmlPage profilePage = getPage(resumeUrlBase + "profile/index?" + nvStr, "resume profile");
 		String name = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][1]");
 		String gender = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][3]");
 		String birthday = xpath(profilePage, "//div[@id='box_view_01']/div[@class='info_width'][6]");
@@ -300,14 +361,19 @@ public class E04Engine {
 		logger.info(String.format("read profile: name:%s, address:%s, gender:%s", name, address, gender));
 		
 		// background
-		HtmlPage backgroundPage = client.getPage(resumeUrlBase + "background/index?" + nvStr);
-		((HtmlElement) backgroundPage.querySelector("#ExperienceFmo_wageYear1")).click();
+		HtmlPage backgroundPage = getPage(resumeUrlBase + "background/index?" + nvStr, "resume background");
+		try {
+			((HtmlElement) backgroundPage.querySelector("#box_view_experience_1 a.edit_exper_1")).click();
+		} catch (IOException e) {
+			logger.error("failed to click background tab");
+			throw new RuntimeException(e);
+		}
 		client.waitForBackgroundJavaScript(5000);
-		String salaryYear = xpath(backgroundPage, "//input[@id='ExperienceFmo_wageYear1']");
+		String salaryYear = xpath(backgroundPage, "//input[@id='ExperienceFmo_wageYear1']", "value");
 		logger.info(String.format("read background: salaryYear:%s", salaryYear));
 		
 		// jobcondition
-		HtmlPage jobconditionPage = client.getPage(resumeUrlBase + "jobcondition/index?" + nvStr);
+		HtmlPage jobconditionPage = getPage(resumeUrlBase + "jobcondition/index?" + nvStr, "job condition");
 		String desiredPos = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][1]");
 		String desiredArea = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][7]");
 		String desiredFields = xpath(jobconditionPage, "//div[@id='box_view_01']/div[@class='info_width'][6]");
@@ -321,6 +387,24 @@ public class E04Engine {
 				contactNumber, address, salaryYear, desiredPos, desiredArea,
 				desiredFields);
 	}
+
+	/**
+	 * get page, and no more checked exception to handle
+	 * 
+	 * @param url 
+	 * @param pageName for error indication
+	 * @return
+	 */
+	private HtmlPage getPage(String url, String pageName) {
+		HtmlPage page = null;
+		try {
+			page = client.getPage(url);
+		} catch (IOException e) {
+			logger.error("failed to get " + pageName + " page:" + url);
+			throw new RuntimeException(e);
+		}
+		return page;
+	}
 	
 	
 	private String xpath(HtmlPage page, String xpath) {
@@ -333,18 +417,27 @@ public class E04Engine {
 			return null;
 		}
 		
+		// read attribute if attrName specified, or read textContent
 		String result = null;
-		if (((DomElement) byXPath.get(0)).getTextContent() != null) {
-			if (attrName != null) {
-				result = StringUtils.trim(((DomElement) byXPath.get(0)).getAttribute(attrName));
-			} else {
-				result = StringUtils.trim(((DomElement) byXPath.get(0)).getTextContent());
-			}
+		if (attrName != null) {
+			result = ((DomElement) byXPath.get(0)).getAttribute(attrName);
+		} else {
+			result = ((DomElement) byXPath.get(0)).getTextContent();
 		}
 		
 		// remove this special char
-		String spChar = " ";
-		return StringUtils.trim(StringUtils.removeEnd(result, spChar));
+		return trimText(result);
+	}
+
+	private String trimText(String text) {
+		if (text == null) {
+			return text;
+		}
+		
+		// there is always this special char in end of text (not a whitespace!)
+		// remove start/end whitespace and spChar
+		final String spChar = " ";
+		return text.replaceAll("^[\\s" + spChar + "]*([^\\s" + spChar + "]*)[\\s" + spChar + "]*$", "_$1_");
 	}
 
 }

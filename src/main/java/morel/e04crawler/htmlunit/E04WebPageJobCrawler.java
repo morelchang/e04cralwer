@@ -32,7 +32,10 @@ public class E04WebPageJobCrawler {
 		if (captchaUrl != null) {
 			captcha = displayCaptchaInSwing(captchaUrl);
 		}
-		engine.login(loginAccount, loginPassword, captcha);
+		LoginStatus loginStatus = engine.login(loginAccount, loginPassword, captcha);
+		if (loginStatus != LoginStatus.SUCCESS) {
+			throw new IllegalStateException("failed to login:" + loginStatus);
+		}
 		
 		engine.getDefaultResume();
 		
