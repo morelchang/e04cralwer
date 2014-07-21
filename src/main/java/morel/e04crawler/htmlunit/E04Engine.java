@@ -374,25 +374,25 @@ public class E04Engine {
 		String roleFullTime = xpath(jobconditionEditPage, "//input[@id='JobConditionFmo_roleArr_0']", "checked");
 		String rolePartTime = xpath(jobconditionEditPage, "//input[@id='JobConditionFmo_roleArr_1']", "checked");
 		
-		String countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		double countvalue = (Double) jobconditionEditPage.getByXPath("count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])").get(0);
 		List<CodeValue> cates = new ArrayList<CodeValue>();
-		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+		for (int i = 1; i <= countvalue; i++) {
 			String cateName = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
 			String cateCode = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
 			cates.add(new CodeValue(cateCode, cateName));
 		}
 		
-		countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		countvalue = (Double) jobconditionEditPage.getByXPath("count(//div[@id='div_JobConditionFmo_jobCatnoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])").get(0);
 		List<CodeValue> fields = new ArrayList<CodeValue>();
-		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+		for (int i = 1; i <= countvalue; i++) {
 			String fieldName = xpath(jobconditionEditPage, "//div[@id='indDiv']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
 			String fieldCode = xpath(jobconditionEditPage, "//div[@id='indDiv']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
 			fields.add(new CodeValue(fieldCode, fieldName));
 		}
 		
-		countvalue = xpath(jobconditionEditPage, "count(//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])");
+		countvalue = (Double) jobconditionEditPage.getByXPath("count(//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'])").get(0);
 		List<CodeValue> areas = new ArrayList<CodeValue>();
-		for (int i = 1; i <= Integer.parseInt(countvalue); i++) {
+		for (int i = 1; i <= countvalue; i++) {
 			String areaName = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/p");
 			String areaCode = xpath(jobconditionEditPage, "//div[@id='div_JobConditionFmo_wcitynoArr']/ul[@class='selected-list defult-click-img']/li[@class='selected-item'][" + i + "]/span[@class='selected-no']");
 			areas.add(new CodeValue(areaCode, areaName));
@@ -469,7 +469,7 @@ public class E04Engine {
 		// there is always this special char in end of text (not a whitespace!)
 		// remove start/end whitespace and spChar
 		final String spChar = " ";
-		return text.replaceAll("^[\\s" + spChar + "]*([^\\s" + spChar + "]*)[\\s" + spChar + "]*$", "_$1_");
+		return text.replaceAll("^[\\s" + spChar + "]*([^\\s" + spChar + "]*)[\\s" + spChar + "]*$", "$1");
 	}
 
 }

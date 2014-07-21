@@ -26,4 +26,9 @@ public class CodeValue {
 		this.value = value;
 	}
 
+	@Override
+	public String toString() {
+		return "CodeValue [code=" + code + ", value=" + value + "]";
+	}
+	
 }
