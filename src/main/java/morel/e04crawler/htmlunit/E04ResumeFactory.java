@@ -2,10 +2,13 @@ package morel.e04crawler.htmlunit;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import morel.e04crawler.CodeValue;
 import morel.e04crawler.Resume;
+import morel.e04crawler.RoleType;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,7 +31,19 @@ public class E04ResumeFactory {
 		resume.setExpectJobCategory(cates);
 		resume.setExpectJobArea(areas);
 		resume.setExpectIndustrySectors(fields);
+		resume.setExpectRoleTypes(parseRoleType(roleFullTime, rolePartTime));
 		return resume;
+	}
+
+	private Set<RoleType> parseRoleType(String roleFullTime, String rolePartTime) {
+		Set<RoleType> result = new HashSet<RoleType>();
+		if ("checked".equals(roleFullTime)) {
+			result.add(RoleType.FULL_TIME);
+		}
+		if ("checked".equals(rolePartTime)) {
+			result.add(RoleType.PART_TIME);
+		}
+		return result;
 	}
 
 	private int formatInt(String salaryYear) {

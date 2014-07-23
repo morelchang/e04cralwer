@@ -1,18 +1,19 @@
 package morel.e04crawler.htmlunit;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import morel.e04crawler.CodeValue;
 import morel.e04crawler.JobRecord;
 import morel.e04crawler.Resume;
+import morel.e04crawler.RoleType;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.logging.Log;
@@ -65,9 +66,6 @@ public class E04Engine {
 	 * you have to call this method before any operation in order to get a login captcha
 	 * 
 	 * @return URL of the captcah, since display this image to end-user and ask for input captcha for login
-	 * 
-	 * @throws IOException
-	 * @throws MalformedURLException
 	 */
 	public String init() {
 		String loginUrl = loginOption.getLoginUrl();
@@ -91,7 +89,6 @@ public class E04Engine {
 	 * @param loginAccount
 	 * @param loginPassword
 	 * @param captcha
-	 * @throws IOException
 	 */
 	public LoginStatus login(String loginAccount, String loginPassword, String captcha) {
 		HtmlForm loginForm = loginOption.fetchLoginForm(loginPage);
@@ -130,6 +127,14 @@ public class E04Engine {
 		return LoginStatus.SUCCESS;
 	}
 
+	public List<JobRecord> fetchJobByApi() {
+		Resume resume = getDefaultResume();
+		Set<RoleType> roles = resume.getExpectRoleTypes();
+		List<CodeValue> areas = resume.getExpectJobArea();
+		List<CodeValue> fields = resume.getExpectIndustrySectors();
+		List<CodeValue> cates = resume.getExpectJobCategory();
+		return E04SearchApi.create().withRoles(roles).withCates(cates).withAreas(areas).withInds(fields).search();
+	}
 
 	/**
 	 * get matching job by user's default resume
@@ -342,6 +347,9 @@ public class E04Engine {
 	 * @return
 	 */
 	public Resume getDefaultResume() {
+		if (pdaPage == null) {
+			throw new IllegalStateException("pdaPage is null, you may need to login first");
+		}
 		logger.info("reading default resume...");
 		DomNodeList<DomNode> resumeLinks = pdaPage.querySelectorAll(".basic_info ul a");
 		// default resume is at last position

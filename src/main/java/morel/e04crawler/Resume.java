@@ -1,7 +1,9 @@
 package morel.e04crawler;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Resume {
 	/**
@@ -17,6 +19,7 @@ public class Resume {
 	private List<CodeValue> expectJobCategory;
 	private List<CodeValue> expectJobArea;
 	private List<CodeValue> expectIndustrySectors;
+	private Set<RoleType> expectRoleTypes = new HashSet<RoleType>();
 	private int previousYearSalary;
 
 	/**
@@ -225,6 +228,24 @@ public class Resume {
 	 */
 	public void setPreviousYearSalary(int previousYearSalary) {
 		this.previousYearSalary = previousYearSalary;
+	}
+
+	/**
+	 * 取得期望工作性質
+	 * 
+	 * @return
+	 */
+	public Set<RoleType> getExpectRoleTypes() {
+		return expectRoleTypes;
+	}
+
+	/**
+	 * 設定期望工作性質
+	 * 
+	 * @param expectRoleTypes
+	 */
+	public void setExpectRoleTypes(Set<RoleType> expectRoleTypes) {
+		this.expectRoleTypes = expectRoleTypes;
 	}
 
 }

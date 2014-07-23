@@ -16,8 +16,16 @@ public class JobRecord {
 	private String jobUrl;
 	private String summary;
 	private Date lastUpdate;
-	// TODO need address property
+	private String jobAddress;
+	private String jobCategory;
+	private int period;
+	private int salaryMonthLow;
+	private int salaryMonthHigh;
 
+	/**
+	 * 公司名稱
+	 * @return
+	 */
 	public String getCompanyName() {
 		return companyName;
 	}
@@ -26,6 +34,10 @@ public class JobRecord {
 		this.companyName = companyName;
 	}
 
+	/**
+	 * 公司說明網址
+	 * @return
+	 */
 	public String getCompanyUrl() {
 		return companyUrl;
 	}
@@ -34,6 +46,10 @@ public class JobRecord {
 		this.companyUrl = companyUrl;
 	}
 
+	/**
+	 * 工作區域
+	 * @return
+	 */
 	public String getArea() {
 		return area;
 	}
@@ -42,6 +58,10 @@ public class JobRecord {
 		this.area = area;
 	}
 
+	/**
+	 * 104公司ID
+	 * @return
+	 */
 	public String getCompanyId() {
 		return companyId;
 	}
@@ -50,6 +70,10 @@ public class JobRecord {
 		this.companyId = companyId;
 	}
 
+	/**
+	 * 104職位ID
+	 * @return
+	 */
 	public String getJobId() {
 		return jobId;
 	}
@@ -58,6 +82,10 @@ public class JobRecord {
 		this.jobId = jobId;
 	}
 
+	/**
+	 * 職位名稱
+	 * @return
+	 */
 	public String getJobName() {
 		return jobName;
 	}
@@ -66,6 +94,10 @@ public class JobRecord {
 		this.jobName = jobName;
 	}
 
+	/**
+	 * 104職位網址
+	 * @return
+	 */
 	public String getJobUrl() {
 		return jobUrl;
 	}
@@ -74,6 +106,10 @@ public class JobRecord {
 		this.jobUrl = jobUrl;
 	}
 
+	/**
+	 * 職務說明
+	 * @return
+	 */
 	public String getSummary() {
 		return summary;
 	}
@@ -82,12 +118,76 @@ public class JobRecord {
 		this.summary = summary;
 	}
 
+	/**
+	 * 最近更新日期
+	 * @return
+	 */
 	public Date getLastUpdate() {
 		return lastUpdate;
 	}
 
 	public void setLastUpdate(Date lastUpdate) {
 		this.lastUpdate = lastUpdate;
+	}
+
+	/**
+	 * 工作地點
+	 * @return
+	 */
+	public String getJobAddress() {
+		return jobAddress;
+	}
+
+	public void setJobAddress(String jobAddress) {
+		this.jobAddress = jobAddress;
+	}
+
+	/**
+	 * 職務類別
+	 * @return
+	 */
+	public String getJobCategory() {
+		return jobCategory;
+	}
+
+	public void setJobCategory(String jobCategory) {
+		this.jobCategory = jobCategory;
+	}
+
+	/**
+	 * 工作年資
+	 * @return
+	 */
+	public int getPeriod() {
+		return period;
+	}
+
+	public void setPeriod(int period) {
+		this.period = period;
+	}
+
+	/**
+	 * 最低月薪
+	 * @return
+	 */
+	public int getSalaryMonthLow() {
+		return salaryMonthLow;
+	}
+
+	public void setSalaryMonthLow(int salaryMonthLow) {
+		this.salaryMonthLow = salaryMonthLow;
+	}
+
+	/**
+	 * 最高月薪
+	 * @return
+	 */
+	public int getSalaryMonthHigh() {
+		return salaryMonthHigh;
+	}
+
+	public void setSalaryMonthHigh(int salaryMonthHigh) {
+		this.salaryMonthHigh = salaryMonthHigh;
 	}
 
 	@Override
