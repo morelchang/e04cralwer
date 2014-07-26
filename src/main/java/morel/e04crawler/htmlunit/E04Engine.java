@@ -91,6 +91,10 @@ public class E04Engine {
 	 * @param captcha
 	 */
 	public LoginStatus login(String loginAccount, String loginPassword, String captcha) {
+		if (loginPage == null) {
+			throw new IllegalStateException("loginPage is null, perhaps you didn't call init() first?");
+		}
+		
 		HtmlForm loginForm = loginOption.fetchLoginForm(loginPage);
 
 		// set login information and login
@@ -153,6 +157,10 @@ public class E04Engine {
 	}
 	
 	public List<JobRecord> fetchJobByItemKey(String itemKey, int limitPageCount) {
+		if (pdaPage == null) {
+			throw new IllegalStateException("pdaPage is null, you may need to login first.");
+		}
+
 		// fetch java related jobs
 		logger.info("fetching jobDetail by itemKey:" + itemKey);
 		HtmlPage jobListPage = getPage("http://pda.104.com.tw/my104/mate/list?itemNo=" + itemKey, "job detail");
