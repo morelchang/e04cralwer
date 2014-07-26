@@ -13,6 +13,7 @@ import morel.e04crawler.CodeValue;
 import morel.e04crawler.JobRecord;
 import morel.e04crawler.RoleType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,7 +26,10 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class E04SearchApi {
 
-	private static final Log logger = LogFactory.getLog(E04SearchApi.class);
+	private static final Log logger = LogFactory.getLog(E04SearchApi.class);	/**
+	 * default job record fetch size
+	 */
+	private static final int FETCH_SIZE = 50;
 	private static final String SEARCH_API_URL = "http://www.104.com.tw/i/apis/jobsearch.cfm";
 	
 	private List<CodeValue> cates = new ArrayList<CodeValue>();
@@ -79,7 +83,7 @@ public class E04SearchApi {
 
 	private String getJsonReuslt(WebClient client, int page) {
 		HtmlPage response = null;
-		String searchUrl = formatSearchUrl(page, 2000, "8");
+		String searchUrl = formatSearchUrl(page, FETCH_SIZE, "8");
 		logger.info("retrieve jobs from API:" + searchUrl);
 		try {
 			response = client.getPage(searchUrl);
@@ -156,11 +160,12 @@ public class E04SearchApi {
 		for (Iterator<RoleType> it = roles.iterator(); it.hasNext();) {
 			RoleType next = it.next();
 			if (next == RoleType.FULL_TIME) {
-				values += "1,3";
+				values += "1,3,";
 			} else if (next == RoleType.PART_TIME) {
-				values += "2";
+				values += "2,";
 			}
 		}
+		values = StringUtils.removeEnd(values, ",");
 		return String.format("&%s=%s", paramName, values);
 	}
 
