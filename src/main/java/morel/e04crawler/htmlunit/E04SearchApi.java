@@ -26,7 +26,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class E04SearchApi {
 
-	private static final Log logger = LogFactory.getLog(E04SearchApi.class);	/**
+	private static final Log logger = LogFactory.getLog(E04SearchApi.class);
+	/**
 	 * default job record fetch size
 	 */
 	private static final int FETCH_SIZE = 50;

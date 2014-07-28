@@ -133,6 +133,10 @@ public class E04Engine {
 
 	public List<JobRecord> fetchJobByApi() {
 		Resume resume = getDefaultResume();
+		return fetchJobByApi(resume);
+	}
+
+	public List<JobRecord> fetchJobByApi(Resume resume) {
 		Set<RoleType> roles = resume.getExpectRoleTypes();
 		List<CodeValue> areas = resume.getExpectJobArea();
 		List<CodeValue> fields = resume.getExpectIndustrySectors();
